@@ -1,0 +1,53 @@
+name: Extract ZIP Files and Push
+
+on:
+  # اجرای دستی از تب Actions
+  workflow_dispatch:
+  # اجرا به صورت خودکار وقتی یک فایل zip آپلود می‌شود
+  push:
+    paths:
+      - '**.zip'
+
+# این خط اجازه می‌دهد توکن پیش‌فرض گیت‌هاب در مخزن شخصی شما تغییرات را ذخیره کند
+permissions:
+  contents: write
+
+jobs:
+  extract-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        # از توکن پیش‌فرض استفاده می‌کند و نیازی به PAT نیست
+
+      - name: Extract ZIP Files
+        run: |
+          echo "شروع استخراج فایل‌های زیپ..."
+          for file in *.zip; do
+            if [ -f "$file" ]; then
+              echo "در حال استخراج: $file"
+              unzip -o "$file" -d ./
+              # حذف فایل زیپ بعد از استخراج (اختیاری، برای تمیز ماندن مخزن)
+              rm "$file" 
+            fi
+          done
+          echo "استخراج با موفقیت انجام شد."
+
+      - name: Commit and Push Changes
+        run: |
+          # تنظیمات گیت برای ربات اکشن‌ها
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # اضافه کردن همه فایل‌ها به جز پوشه ورک‌فلوها
+          # این دستور دقیقاً همان بخشی است که خطای دسترسی را دور می‌زند
+          git add . -- ':!.github/workflows'
+          
+          # بررسی اینکه آیا تغییری برای کامیت وجود دارد یا خیر
+          if git diff --staged --quiet; then
+            echo "هیچ تغییری برای ذخیره وجود ندارد."
+          else
+            git commit -m "Auto-extract ZIP files (ignoring workflows) [skip ci]"
+            git push
+          fi
