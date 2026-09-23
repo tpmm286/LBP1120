@@ -1,0 +1,47 @@
+name: Windows Build & Test (Electron 22)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Electron 22 compatible)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies
+        run: |
+          if (Test-Path package-lock.json) { npm ci } else { npm install }
+
+      - name: Run automated protocol & SCoA unit tests (Hardware-Free)
+        run: npm test
+
+      - name: Build web application bundle
+        run: npm run build
+
+      - name: Package Electron portable application
+        run: npx @electron/packager . LBP1120-Windows-x64 --platform=win32 --arch=x64 --overwrite --out=dist-win
+
+      - name: Create Portable Zip Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist-win\LBP1120-Windows-x64-win32-x64\* -DestinationPath dist-win\LBP1120-Windows-x64-v1.0.0-portable.zip
+
+      - name: Upload Windows Executable Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LBP1120-Windows-x64
+          path: |
+            dist-win/LBP1120-Windows-x64-v1.0.0-portable.zip
+            dist-win/LBP1120-Windows-x64-win32-x64/
