@@ -1,0 +1,181 @@
+name: Windows Build & Test (Electron 22)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows x64
+    runs-on: windows-latest
+
+    steps:
+      # ----------------------------------------
+      # 1. Checkout
+      # ----------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ----------------------------------------
+      # 2. Setup Node.js
+      # ----------------------------------------
+      # Node 22 is used for the build environment.
+      # This does NOT change the Electron runtime version.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      # ----------------------------------------
+      # 3. Show versions
+      # ----------------------------------------
+      - name: Show Node and npm versions
+        shell: pwsh
+        run: |
+          Write-Host "Node version:"
+          node --version
+
+          Write-Host "npm version:"
+          npm --version
+
+      # ----------------------------------------
+      # 4. Install dependencies
+      # ----------------------------------------
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          if (Test-Path "package-lock.json") {
+            Write-Host "package-lock.json found. Running npm ci..."
+            npm ci
+          }
+          else {
+            Write-Host "No package-lock.json found. Running npm install..."
+            npm install
+          }
+
+      # ----------------------------------------
+      # 5. Run tests
+      # ----------------------------------------
+      - name: Run automated protocol & SCoA unit tests
+        run: npm test
+
+      # ----------------------------------------
+      # 6. Build web application
+      # ----------------------------------------
+      - name: Build web application bundle
+        run: npm run build
+
+      # ----------------------------------------
+      # 7. Verify Vite build output
+      # ----------------------------------------
+      - name: Verify build output
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist")) {
+            throw "Build failed: dist directory was not created."
+          }
+
+          Write-Host "Build output found:"
+          Get-ChildItem "dist" -Recurse | Select-Object FullName
+
+      # ----------------------------------------
+      # 8. Package Electron application
+      # ----------------------------------------
+      - name: Package Electron portable application
+        shell: pwsh
+        run: |
+          npx @electron/packager . `
+            LBP1120-Windows-x64 `
+            --platform=win32 `
+            --arch=x64 `
+            --overwrite `
+            --out=dist-win
+
+      # ----------------------------------------
+      # 9. Verify Electron package
+      # ----------------------------------------
+      - name: Verify Electron package
+        shell: pwsh
+        run: |
+          $appDir = "dist-win\LBP1120-Windows-x64-win32-x64"
+
+          if (-not (Test-Path $appDir)) {
+            throw "Electron package was not created: $appDir"
+          }
+
+          $exe = Join-Path $appDir "LBP1120-Windows-x64.exe"
+
+          if (-not (Test-Path $exe)) {
+            throw "Electron executable was not found: $exe"
+          }
+
+          Write-Host "Electron application created successfully."
+          Write-Host "Executable: $exe"
+
+      # ----------------------------------------
+      # 10. Create portable ZIP
+      # ----------------------------------------
+      - name: Create Portable ZIP Package
+        shell: pwsh
+        run: |
+          $appDir = "dist-win\LBP1120-Windows-x64-win32-x64"
+          $zipPath = "dist-win\LBP1120-Windows-x64-v1.0.0-portable.zip"
+
+          if (-not (Test-Path $appDir)) {
+            throw "Application directory not found: $appDir"
+          }
+
+          if (Test-Path $zipPath) {
+            Remove-Item $zipPath -Force
+          }
+
+          Compress-Archive `
+            -Path "$appDir\*" `
+            -DestinationPath $zipPath `
+            -CompressionLevel Optimal
+
+          if (-not (Test-Path $zipPath)) {
+            throw "Portable ZIP was not created."
+          }
+
+          Write-Host "Portable ZIP created:"
+          Write-Host $zipPath
+
+      # ----------------------------------------
+      # 11. Show package information
+      # ----------------------------------------
+      - name: Show final package information
+        shell: pwsh
+        run: |
+          Write-Host ""
+          Write-Host "========================================"
+          Write-Host " FINAL WINDOWS BUILD"
+          Write-Host "========================================"
+
+          Get-Item `
+            "dist-win\LBP1120-Windows-x64-v1.0.0-portable.zip" |
+            Select-Object Name, Length, FullName
+
+          Write-Host ""
+          Write-Host "Build completed successfully."
+
+      # ----------------------------------------
+      # 12. Upload artifact
+      # ----------------------------------------
+      - name: Upload Windows Portable Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LBP1120-Windows-x64
+          path: dist-win/LBP1120-Windows-x64-v1.0.0-portable.zip
+          if-no-files-found: error
+          retention-days: 30
