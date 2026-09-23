@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canon LBP-1120 WebUSB & SCoA Print Station</title>
+  <meta name="description" content="Zero-driver WebUSB and user-mode SCoA/CAPT v1 print driver for Canon LASER SHOT LBP-1120 on Windows 11.">
+  <meta property="og:title" content="Canon LBP-1120 WebUSB & SCoA Print Station">
+  <meta property="og:description" content="Zero-driver WebUSB and user-mode SCoA/CAPT v1 print driver for Canon LASER SHOT LBP-1120 on Windows 11.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Canon Laser Shot LBP-1120 — USB Diagnostic & CAPT v1 Engine</h1>
+    <div class="subtitle">Target: Electron 22.x &bull; Chromium 108 &bull; Windows 7 / 8 / 8.1 / 10 / 11</div>
+  </header>
+
+  <div class="notice-box">
+    <strong>Diagnostic & Zero-Driver Boundary:</strong> This application communicates directly over WebUSB (VID <code>0x04A9</code>, PID <code>0x262B</code>).
+    It does not install or replace printer drivers, does not use Zadig, and does not require CUPS or WSL.
+    No CAPT packets are sent over USB until physical Interface 0 has been claimed.
+  </div>
+
+  <!-- Primary Control Bar -->
+  <div class="controls-bar">
+    <button id="btnConnect" type="button">1. Connect Printer (WebUSB)</button>
+    <button id="btnSimulate" type="button" class="secondary">Run Simulated Protocol Test</button>
+    <button id="btnClearLog" type="button" class="secondary">Clear Log</button>
+    <span style="flex: 1;"></span>
+    <span style="font-size: 12px; color: #64748b; font-weight: 600;">Status:</span>
+    <span id="statusBadge" class="status-badge">Disconnected</span>
+  </div>
+
+  <div class="grid">
+    <!-- Left: USB Information Area -->
+    <div class="card">
+      <div class="card-title">USB Information Area</div>
+      <div id="usbInfoArea">
+        <div class="empty-state">
+          No device connected.<br>Click "Connect Printer" to inspect USB descriptors and claim Interface 0.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: CAPT & SCoA Print Station -->
+    <div class="card">
+      <div class="card-title">CAPT v1 Print Station (Internal 600 DPI & PDF)</div>
+      
+      <div style="font-size: 12px; color: #475569; margin-bottom: 10px;">
+        Generates 600 DPI monochrome raster with SCoA differential compression.
+      </div>
+
+      <div class="print-controls">
+        <label for="paperSelect" style="font-weight: 600;">Paper:</label>
+        <select id="paperSelect">
+          <option value="A4" selected>A4 (210 x 297 mm, 620B/line, 7040 lines)</option>
+          <option value="Letter">Letter (8.5 x 11 in, 636B/line, 6592 lines)</option>
+        </select>
+
+        <button id="btnRenderTestPage" type="button" class="secondary">Render 600 DPI Test Page</button>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+        <label for="pdfInput" style="font-size: 12px; font-weight: 600;">Or Load PDF Document:</label>
+        <input type="file" id="pdfInput" accept="application/pdf">
+      </div>
+
+      <div class="canvas-preview-container">
+        <canvas id="previewCanvas" width="496" height="704"></canvas>
+        <div id="rasterStats" style="font-family: Consolas, monospace; font-size: 11px; color: #64748b;">
+          600 DPI Raster: 4960 x 7040 (4.37 MB raw 1bpp)
+        </div>
+      </div>
+
+      <div style="margin-top: 14px; display: flex; gap: 10px;">
+        <button id="btnPrint" type="button" class="accent" disabled>
+          Print to LBP-1120 via USB
+        </button>
+        <button id="btnDryRun" type="button" class="secondary">
+          Dry Run (Verify SCoA Bytecode)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: Error / Status Log -->
+  <div class="card">
+    <div class="card-title">Error & Status Log</div>
+    <pre id="logArea"></pre>
+  </div>
+
+  <script type="module" src="renderer.js"></script>
+</body>
+</html>

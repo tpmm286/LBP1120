@@ -1,0 +1,22 @@
+{
+  "name": "canon-lbp1120-usb-diagnostic",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "electron": "electron .",
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "test": "node tests/engine.test.js",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^22.3.27",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

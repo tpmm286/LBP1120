@@ -1,0 +1,7 @@
+{
+  "name": "Canon LBP-1120 WebUSB & SCoA Print Station",
+  "description": "Zero-driver WebUSB and user-mode SCoA/CAPT v1 print driver for Canon LASER SHOT LBP-1120 on Windows 11.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
